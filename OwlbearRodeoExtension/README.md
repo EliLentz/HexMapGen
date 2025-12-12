@@ -119,9 +119,9 @@ npm run version:update
 | Scenario | Version Format | Example | Owlbear Compatible |
 |----------|----------------|---------|-------------------|
 | **All builds** | `{semantic}` | `1.2.3` | ✅ Yes |
-| **Version metadata** | Build info in logs only | - | - |
+| **Auto-increment** | Patch version increases on every build | `0.0.1 → 0.0.2 → 0.0.3` | ✅ Yes |
 
-**Note**: All builds now generate Owlbear Rodeo-compatible semantic versions. Version differentiation happens through build metadata and commit history, not in the manifest version string.
+**Note**: The patch version automatically increments on every build (dev or production). This ensures each deployment has a unique version number while maintaining semantic versioning compatibility with Owlbear Rodeo.
 
 ### Build Process
 

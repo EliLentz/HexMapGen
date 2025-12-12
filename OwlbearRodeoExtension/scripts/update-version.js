@@ -82,6 +82,34 @@ function getPackageVersion() {
   }
 }
 
+// Increment patch version in package.json
+function incrementPatchVersion() {
+  try {
+    const packagePath = join(__dirname, '..', 'package.json');
+    const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
+    const currentVersion = packageJson.version;
+
+    // Parse version (assuming semver format x.y.z)
+    const versionParts = currentVersion.split('.');
+    if (versionParts.length === 3) {
+      const patch = parseInt(versionParts[2]) + 1;
+      const newVersion = `${versionParts[0]}.${versionParts[1]}.${patch}`;
+
+      packageJson.version = newVersion;
+      writeFileSync(packagePath, JSON.stringify(packageJson, null, 2) + '\n');
+
+      console.log(`📦 Incremented package version: ${currentVersion} → ${newVersion}`);
+      return newVersion;
+    }
+
+    console.warn('⚠️  Could not parse version format, keeping current version');
+    return currentVersion;
+  } catch (error) {
+    console.error('❌ Failed to increment package version:', error.message);
+    return null;
+  }
+}
+
 // Update manifest.json
 function updateManifest(version) {
   const manifestPath = join(__dirname, '..', 'public', 'manifest.json');
@@ -106,10 +134,10 @@ function updateManifest(version) {
 function main() {
   console.log('🔄 Updating extension version...');
 
-  const gitInfo = getGitInfo();
-  const packageVersion = getPackageVersion();
+  // Always increment patch version on build
+  const packageVersion = incrementPatchVersion() || getPackageVersion();
 
-  // Check if this is a production build (GitHub Pages deployment)
+  const gitInfo = getGitInfo();
   const isProduction = process.env.NODE_ENV === 'production' ||
                       process.argv.includes('--production') ||
                       process.cwd().includes('docs'); // If we're in docs folder
