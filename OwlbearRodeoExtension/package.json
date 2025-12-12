@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run version:update && tsc && vite build",
+    "build:pages": "npm run version:update && tsc && vite build && echo 'Built for GitHub Pages in ../docs/'",
+    "deploy:pages": "node scripts/deploy-pages.js",
     "preview": "vite preview",
     "version:update": "node scripts/update-version.js",
     "version:patch": "npm version patch --no-git-tag-version && npm run version:update",

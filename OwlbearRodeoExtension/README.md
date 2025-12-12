@@ -40,6 +40,56 @@ A study extension for learning Owlbear Rodeo development.
 - `src/style.css` - Extension styling
 - `public/icon.svg` - Extension icon
 
+## GitHub Pages Deployment
+
+The extension is configured to build directly to the `docs/` folder for GitHub Pages hosting:
+
+### Build for GitHub Pages
+
+```bash
+npm run build:pages
+```
+
+This creates the `docs/` folder in your repository root with all built files.
+
+### GitHub Pages Setup
+
+1. **Enable GitHub Pages** in your repository settings
+2. **Select source**: "Deploy from a branch"
+3. **Branch**: `main` (or your default branch)
+4. **Folder**: `/docs`
+
+### Quick Deployment (Recommended)
+
+```bash
+# One-command deployment
+npm run deploy:pages
+git push
+```
+
+This automatically builds, commits the docs folder, and prepares for push.
+
+### Alternative: Manual Deployment
+
+```bash
+# Build the extension
+npm run build:pages
+
+# Commit the docs folder
+git add ../docs/
+git commit -m "Deploy extension to GitHub Pages"
+git push
+```
+
+### Access Your Extension
+
+Once deployed, your extension will be available at:
+```
+https://yourusername.github.io/repository-name/manifest.json
+```
+
+Use this URL when installing the extension in Owlbear Rodeo.
+
 ## Automatic Version Management
 
 The extension automatically updates its version in `manifest.json` based on your commits and package version:
