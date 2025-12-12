@@ -129,8 +129,16 @@ The version updates automatically during:
 - `npm run build` - Updates before building
 - `npm run prepare` - Updates when package is prepared
 
+## Features
+
+- 🎲 **Dice Rolling**: Roll D20 with critical success/failure detection
+- 📊 **Scene Analysis**: Get information about items on your scene
+- 🔔 **Notifications**: Send notifications to players
+- 🎨 **Modern UI**: Beautiful gradient design with responsive layout
+
 ## Next Steps
 
 - Explore more SDK features like tools, context menus, and popovers
-- Try integrating with React or Vue
+- Try integrating with React or Vue for more complex interfaces
 - Add more complex functionality like character sheets or initiative trackers
+- Customize the color scheme and branding
