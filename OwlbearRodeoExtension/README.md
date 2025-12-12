@@ -112,9 +112,12 @@ npm run version:update
 
 ### Version Format
 
-- **Main/Master branch**: `1.2.3+abc1234` (semantic + commit hash)
-- **Other branches**: `1.2.3-branch.25` (semantic + branch + commit count)
-- **Development**: `0.25.1234-dev` (fallback with timestamp)
+| Scenario | Version Format | Example | Owlbear Compatible |
+|----------|----------------|---------|-------------------|
+| **All builds** | `{semantic}` | `1.2.3` | ✅ Yes |
+| **Version metadata** | Build info in logs only | - | - |
+
+**Note**: All builds now generate Owlbear Rodeo-compatible semantic versions. Version differentiation happens through build metadata and commit history, not in the manifest version string.
 
 ### Build Process
 

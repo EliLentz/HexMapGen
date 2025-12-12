@@ -36,8 +36,17 @@ function getGitInfo() {
 }
 
 // Generate version string
-function generateVersion(gitInfo, packageVersion) {
+function generateVersion(gitInfo, packageVersion, isProduction = false) {
   const { commitCount, commitHash, branch } = gitInfo;
+
+  // For production deployments (GitHub Pages), always use clean semantic versions
+  if (isProduction) {
+    if (packageVersion && packageVersion !== '0.0.0') {
+      return packageVersion;
+    }
+    // Default production version
+    return '1.0.0';
+  }
 
   // If we have a package.json version, use it as base
   if (packageVersion && packageVersion !== '0.0.0') {
@@ -46,8 +55,8 @@ function generateVersion(gitInfo, packageVersion) {
       return `${packageVersion}+${commitHash}`;
     }
 
-    // For other branches, use package version with branch suffix
-    return `${packageVersion}-${branch}.${commitCount}`;
+    // For other branches, use package version with branch suffix (but clean for Owlbear)
+    return packageVersion; // Just use the base version for development
   }
 
   // Fallback for when no package version is set
@@ -58,8 +67,8 @@ function generateVersion(gitInfo, packageVersion) {
     return `${major}.${minor}.${patch}`;
   }
 
-  // For other branches, use branch name with commit info
-  return `0.${commitCount}.${Date.now().toString().slice(-4)}-${branch}`;
+  // For development branches, use a simple version
+  return '0.1.0';
 }
 
 // Get package.json version
@@ -99,10 +108,17 @@ function main() {
 
   const gitInfo = getGitInfo();
   const packageVersion = getPackageVersion();
-  const newVersion = generateVersion(gitInfo, packageVersion);
+
+  // Check if this is a production build (GitHub Pages deployment)
+  const isProduction = process.env.NODE_ENV === 'production' ||
+                      process.argv.includes('--production') ||
+                      process.cwd().includes('docs'); // If we're in docs folder
+
+  const newVersion = generateVersion(gitInfo, packageVersion, isProduction);
 
   console.log(`📦 Package version: ${packageVersion || 'none'}`);
   console.log(`📊 Git info: ${gitInfo.commitCount} commits, ${gitInfo.commitHash} on ${gitInfo.branch}`);
+  console.log(`🏭 Build mode: ${isProduction ? 'production' : 'development'}`);
   console.log(`🏷️  Generated version: ${newVersion}`);
 
   const success = updateManifest(newVersion);

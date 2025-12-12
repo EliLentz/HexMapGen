@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run version:update && tsc && vite build",
-    "build:pages": "npm run version:update && tsc && vite build && echo 'Built for GitHub Pages in ../docs/'",
+    "build:pages": "cross-env NODE_ENV=production npm run version:update && tsc && vite build && echo 'Built for GitHub Pages in ../docs/'",
     "deploy:pages": "node scripts/deploy-pages.js",
     "preview": "vite preview",
     "version:update": "node scripts/update-version.js",
@@ -16,6 +16,7 @@
     "prepare": "npm run version:update"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.4"
   },
