@@ -52,7 +52,8 @@ npm run build:pages
 
 **Important Path Notes**:
 - Uses `manifest_version` (snake_case) as required by Owlbear Rodeo
-- Uses full absolute URLs (`https://elilentz.github.io/HexMapGen/docs/icon.svg`) for maximum compatibility
+- Uses full absolute URLs for assets to work across different contexts
+- Popover size configured in manifest (`width: 450px, height: 400px`)
 
 This creates the `docs/` folder in your repository root with all built files.
 
