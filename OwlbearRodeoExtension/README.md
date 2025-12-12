@@ -40,6 +40,38 @@ A study extension for learning Owlbear Rodeo development.
 - `src/style.css` - Extension styling
 - `public/icon.svg` - Extension icon
 
+## Automatic Version Management
+
+The extension automatically updates its version in `manifest.json` based on your commits and package version:
+
+### Version Commands
+
+```bash
+# Bump patch version (0.0.1 → 0.0.2)
+npm run version:patch
+
+# Bump minor version (0.0.1 → 0.1.0)
+npm run version:minor
+
+# Bump major version (0.0.1 → 1.0.0)
+npm run version:major
+
+# Manual update (uses git info)
+npm run version:update
+```
+
+### Version Format
+
+- **Main/Master branch**: `1.2.3+abc1234` (semantic + commit hash)
+- **Other branches**: `1.2.3-branch.25` (semantic + branch + commit count)
+- **Development**: `0.25.1234-dev` (fallback with timestamp)
+
+### Build Process
+
+The version updates automatically during:
+- `npm run build` - Updates before building
+- `npm run prepare` - Updates when package is prepared
+
 ## Next Steps
 
 - Explore more SDK features like tools, context menus, and popovers

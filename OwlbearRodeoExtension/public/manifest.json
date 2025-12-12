@@ -1,6 +1,6 @@
 {
   "name": "My First Owlbear Extension",
-  "version": "1.0.0",
+  "version": "0.0.1-dev.25",
   "description": "A study extension for learning Owlbear Rodeo development",
   "author": "Your Name",
   "manifestVersion": 1,
