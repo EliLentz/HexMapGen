@@ -53,7 +53,7 @@ npm run build:pages
 **Important Path Notes**:
 - Uses `manifest_version` (snake_case) as required by Owlbear Rodeo
 - Uses full absolute URLs for assets to work across different contexts
-- Popover size controlled by CSS (`min-width: 450px, min-height: 400px`)
+- Window size constrained to viewport with `overflow: hidden` (no scrolling)
 
 This creates the `docs/` folder in your repository root with all built files.
 
