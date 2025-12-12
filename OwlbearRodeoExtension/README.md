@@ -50,7 +50,9 @@ The extension is configured to build directly to the `docs/` folder for GitHub P
 npm run build:pages
 ```
 
-**Note**: The manifest uses `manifest_version` (snake_case) as required by Owlbear Rodeo, not `manifestVersion` (camelCase).
+**Important Path Notes**:
+- Uses `manifest_version` (snake_case) as required by Owlbear Rodeo
+- Paths include `/docs/` prefix since GitHub Pages serves from the docs folder
 
 This creates the `docs/` folder in your repository root with all built files.
 

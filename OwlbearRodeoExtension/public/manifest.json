@@ -6,7 +6,7 @@
   "manifest_version": 1,
   "action": {
     "title": "My Extension",
-    "icon": "/icon.svg",
-    "popover": "/index.html"
+    "icon": "/docs/icon.svg",
+    "popover": "/docs/index.html"
   }
 }
