@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "A study extension for learning Owlbear Rodeo development",
   "author": "Your Name",
-  "manifestVersion": 1,
+  "manifest_version": 1,
   "action": {
     "title": "My Extension",
     "icon": "/icon.svg",
