@@ -52,7 +52,7 @@ npm run build:pages
 
 **Important Path Notes**:
 - Uses `manifest_version` (snake_case) as required by Owlbear Rodeo
-- Uses relative paths (`icon.svg`, `index.html`) that resolve correctly from the manifest location
+- Uses absolute paths (`/HexMapGen/docs/icon.svg`) that work regardless of manifest location
 
 This creates the `docs/` folder in your repository root with all built files.
 
