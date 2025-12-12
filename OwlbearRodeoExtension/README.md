@@ -52,7 +52,7 @@ npm run build:pages
 
 **Important Path Notes**:
 - Uses `manifest_version` (snake_case) as required by Owlbear Rodeo
-- Paths include `/docs/` prefix since GitHub Pages serves from the docs folder
+- Uses relative paths (`icon.svg`, `index.html`) that resolve correctly from the manifest location
 
 This creates the `docs/` folder in your repository root with all built files.
 

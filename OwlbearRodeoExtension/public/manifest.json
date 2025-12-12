@@ -1,12 +1,12 @@
 {
   "name": "My First Owlbear Extension",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A study extension for learning Owlbear Rodeo development",
   "author": "Your Name",
   "manifest_version": 1,
   "action": {
     "title": "My Extension",
-    "icon": "/docs/icon.svg",
-    "popover": "/docs/index.html"
+    "icon": "icon.svg",
+    "popover": "index.html"
   }
 }
