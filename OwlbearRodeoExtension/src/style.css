@@ -9,19 +9,14 @@ html, body {
   padding: 24px;
   width: 100%;
   height: 100%;
-  max-width: 100vw;
-  max-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #213547;
   box-sizing: border-box;
-  overflow: hidden; /* Prevent scrolling */
 }
 
 #app {
   width: 100%;
   height: 100%;
-  max-height: calc(100vh - 48px);
-  overflow: hidden;
 }
 
 .extension-container {
@@ -30,12 +25,8 @@ html, body {
   border-radius: 16px;
   padding: 20px;
   height: 100%;
-  max-height: calc(100vh - 48px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 h1 {
@@ -44,12 +35,10 @@ h1 {
   color: #2c3e50;
   font-weight: 600;
   text-align: center;
-  flex-shrink: 0;
 }
 
 .controls-section {
   margin-bottom: 16px;
-  flex-shrink: 0;
 }
 
 .section-title {
@@ -98,28 +87,22 @@ button:active {
 }
 
 .output-section {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+  margin-top: 16px;
 }
 
 .output {
-  flex: 1;
   padding: 16px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-radius: 12px;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   font-size: 13px;
   text-align: left;
-  min-height: 60px;
-  max-height: 100%;
+  min-height: 120px;
   border: 2px solid #dee2e6;
   color: #495057;
   line-height: 1.4;
   word-wrap: break-word;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-  overflow-y: auto;
 }
 
 .output p {
