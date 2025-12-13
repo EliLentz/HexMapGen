@@ -71,15 +71,21 @@ OBR.onReady(() => {
     `
   })
 
-  // Add context menu item for showing item names
+  // Track context menu indicator shapes
+  let contextIndicatorId: string | null = null
+
+  // Add context menu item for drawing indicator squares
   OBR.contextMenu.create({
-    id: 'show-item-name',
+    id: 'draw-indicator-square',
     icons: [
       {
         icon: 'https://elilentz.github.io/HexMapGen/icon.svg',
-        label: '📝 Show Item Name',
+        label: '📐 Draw Indicator',
         filter: {
-          every: [{ key: 'layer', value: 'CHARACTER', operator: '!=' }, { key: 'layer', value: 'DRAWING', operator: '!=' }]
+          every: [
+            { key: 'layer', value: 'CHARACTER', operator: '!=' },
+            { key: 'layer', value: 'DRAWING', operator: '!=' }
+          ]
         }
       }
     ],
@@ -93,25 +99,57 @@ OBR.onReady(() => {
           return
         }
 
-        // Show names of all selected items
-        const itemNames = selectedItems.map(item => item.name || `Item ${item.id.slice(0, 8)}`).join(', ')
-        OBR.notification.show(`📝 Items: ${itemNames}`)
+        // Get the first selected item
+        const selectedItem = selectedItems[0]
 
-        // Also update the extension output
+        // Calculate position for the indicator (some distance above the item)
+        const itemBounds = await OBR.scene.items.getItemBounds([selectedItem.id])
+        const indicatorX = itemBounds.center.x
+        const indicatorY = itemBounds.min.y - 60 // 60 units above the item
+
+        // Remove existing context indicator
+        if (contextIndicatorId) {
+          await OBR.scene.items.deleteItems([contextIndicatorId])
+        }
+
+        // Create new indicator shape (different style from selection indicator)
+        const contextIndicator = buildShape()
+          .position({ x: indicatorX, y: indicatorY })
+          .shapeType('RECTANGLE')
+          .width(30)
+          .height(30)
+          .fillColor('#4ecdc4')
+          .fillOpacity(0.9)
+          .strokeColor('#26a69a')
+          .strokeWidth(2)
+          .strokeOpacity(1)
+          .layer('POPOVER')
+          .name('Context Menu Indicator')
+          .build()
+
+        // Add the shape to the scene
+        await OBR.scene.items.addItems([contextIndicator])
+        contextIndicatorId = contextIndicator.id
+
+        // Show item name in notification
+        const itemName = selectedItem.name || `Item ${selectedItem.id.slice(0, 8)}`
+        OBR.notification.show(`📐 Indicator drawn for: ${itemName}`)
+
+        // Update extension output
         output.innerHTML = `
           <p>🖱️ Context Menu Used</p>
-          <p>• Items selected: <strong>${selectedItems.length}</strong></p>
-          <p>• Names: <em>${itemNames}</em></p>
-          <p>• Right-click any asset to see this menu!</p>
+          <p>• Indicator drawn above: <strong>${itemName}</strong></p>
+          <p>• Position: (${Math.round(indicatorX)}, ${Math.round(indicatorY)})</p>
+          <p>• Right-click any asset to draw indicators!</p>
         `
       } catch (error) {
         console.error('Error in context menu:', error)
-        OBR.notification.show('❌ Error accessing item information')
+        OBR.notification.show('❌ Error creating indicator')
       }
     }
   })
 
-  console.log('🎯 Context menu registered: Right-click character tokens to see "Show Item Name"')
+  console.log('🎯 Context menu registered: Right-click any asset to draw indicator squares')
 
   // Track created indicator shapes
   let indicatorShapeId: string | null = null

@@ -135,21 +135,22 @@ The version updates automatically during:
 - 🎲 **Dice Rolling**: Roll D20 with critical success/failure detection
 - 📊 **Scene Analysis**: Get information about items on your scene
 - 🔔 **Notifications**: Send notifications to players
-- 🖱️ **Context Menu**: Right-click any asset to show its name
+- 🖱️ **Context Menu**: Right-click any asset to draw indicator squares
 - 📐 **Selection Indicators**: Visual square appears when selecting items
 - 🎨 **Modern UI**: Beautiful gradient design with responsive layout
 
 ## Technical Learning
 
 **APIs Demonstrated**:
-- `OBR.contextMenu.create()` - Register context menu items
+- `OBR.contextMenu.create()` - Register context menu items with visual indicators
 - `OBR.scene.items.onChange()` - Listen for scene item changes and selections
 - `OBR.scene.items.addItems()` - Add shapes and visual elements to the scene
 - `OBR.scene.items.deleteItems()` - Remove items from scene
-- `OBR.scene.items.getItemBounds()` - Get item dimensions and position
-- `buildShape()` - Create visual shapes programmatically
-- Selection metadata and item filtering
-- Shape styling (colors, opacity, stroke, layers)
+- `OBR.scene.items.getItemBounds()` - Get item dimensions and position for precise placement
+- `buildShape()` - Create visual shapes programmatically with full styling control
+- Context menu callbacks with item context access
+- Shape positioning, layering, and visual properties
+- Multiple indicator management and cleanup
 
 ## Next Steps
 
