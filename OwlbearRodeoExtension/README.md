@@ -136,7 +136,20 @@ The version updates automatically during:
 - 📊 **Scene Analysis**: Get information about items on your scene
 - 🔔 **Notifications**: Send notifications to players
 - 🖱️ **Context Menu**: Right-click any asset to show its name
+- 📐 **Selection Indicators**: Visual square appears when selecting items
 - 🎨 **Modern UI**: Beautiful gradient design with responsive layout
+
+## Technical Learning
+
+**APIs Demonstrated**:
+- `OBR.contextMenu.create()` - Register context menu items
+- `OBR.scene.items.onChange()` - Listen for scene item changes and selections
+- `OBR.scene.items.addItems()` - Add shapes and visual elements to the scene
+- `OBR.scene.items.deleteItems()` - Remove items from scene
+- `OBR.scene.items.getItemBounds()` - Get item dimensions and position
+- `buildShape()` - Create visual shapes programmatically
+- Selection metadata and item filtering
+- Shape styling (colors, opacity, stroke, layers)
 
 ## Next Steps
 

@@ -1,5 +1,5 @@
 import './style.css'
-import OBR from '@owlbear-rodeo/sdk'
+import OBR, { buildShape } from '@owlbear-rodeo/sdk'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="extension-container">
@@ -112,4 +112,79 @@ OBR.onReady(() => {
   })
 
   console.log('🎯 Context menu registered: Right-click character tokens to see "Show Item Name"')
+
+  // Track created indicator shapes
+  let indicatorShapeId: string | null = null
+
+  // Listen for item selection changes
+  OBR.scene.items.onChange(async (items) => {
+    try {
+      // Find selected items
+      const selectedItems = items.filter(item => item.visible && item.metadata?.[`${OBR.player.id}/selected`] === true)
+
+      // Remove existing indicator if no items selected or different item selected
+      if (selectedItems.length === 0) {
+        if (indicatorShapeId) {
+          await OBR.scene.items.deleteItems([indicatorShapeId])
+          indicatorShapeId = null
+        }
+        return
+      }
+
+      // Get the first selected item
+      const selectedItem = selectedItems[0]
+
+      // Calculate position for the indicator (some distance from right edge of item)
+      const itemBounds = await OBR.scene.items.getItemBounds([selectedItem.id])
+      const itemRightEdge = itemBounds.max.x
+      const indicatorX = itemRightEdge + 50 // 50 units to the right
+      const indicatorY = itemBounds.center.y
+
+      // Remove existing indicator
+      if (indicatorShapeId) {
+        await OBR.scene.items.deleteItems([indicatorShapeId])
+      }
+
+      // Create new indicator shape
+      const indicatorShape = buildShape()
+        .position({ x: indicatorX, y: indicatorY })
+        .shapeType('RECTANGLE')
+        .width(40)
+        .height(40)
+        .fillColor('#ff6b6b')
+        .fillOpacity(0.8)
+        .strokeColor('#ffffff')
+        .strokeWidth(3)
+        .strokeOpacity(1)
+        .layer('POPOVER') // Ensure it's visible above other elements
+        .name('Selection Indicator')
+        .build()
+
+      // Add the shape to the scene
+      await OBR.scene.items.addItems([indicatorShape])
+      indicatorShapeId = indicatorShape.id
+
+      // Update extension output
+      output.innerHTML = `
+        <p>🎯 Item Selected</p>
+        <p>• Name: <strong>${selectedItem.name || 'Unnamed Item'}</strong></p>
+        <p>• Indicator placed at: (${Math.round(indicatorX)}, ${Math.round(indicatorY)})</p>
+        <p>• Click elsewhere to remove indicator</p>
+      `
+
+    } catch (error) {
+      console.error('Error handling selection:', error)
+      // Clean up on error
+      if (indicatorShapeId) {
+        try {
+          await OBR.scene.items.deleteItems([indicatorShapeId])
+        } catch (cleanupError) {
+          console.error('Error cleaning up:', cleanupError)
+        }
+        indicatorShapeId = null
+      }
+    }
+  })
+
+  console.log('📐 Selection indicator system active: Click any item to see the red square indicator')
 })
