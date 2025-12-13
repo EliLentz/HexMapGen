@@ -135,6 +135,7 @@ The version updates automatically during:
 - 🎲 **Dice Rolling**: Roll D20 with critical success/failure detection
 - 📊 **Scene Analysis**: Get information about items on your scene
 - 🔔 **Notifications**: Send notifications to players
+- 🖱️ **Context Menu**: Right-click any asset to show its name
 - 🎨 **Modern UI**: Beautiful gradient design with responsive layout
 
 ## Next Steps

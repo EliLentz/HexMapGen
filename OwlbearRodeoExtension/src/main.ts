@@ -70,4 +70,46 @@ OBR.onReady(() => {
       <p>${roll === 20 ? '🌟 Amazing!' : roll === 1 ? '😞 Ouch!' : 'Nice roll!'}</p>
     `
   })
+
+  // Add context menu item for showing item names
+  OBR.contextMenu.create({
+    id: 'show-item-name',
+    icons: [
+      {
+        icon: 'https://elilentz.github.io/HexMapGen/icon.svg',
+        label: '📝 Show Item Name',
+        filter: {
+          every: [{ key: 'layer', value: 'CHARACTER', operator: '!=' }, { key: 'layer', value: 'DRAWING', operator: '!=' }]
+        }
+      }
+    ],
+    onClick: async (context) => {
+      try {
+        // Get the selected items
+        const selectedItems = context.items
+
+        if (selectedItems.length === 0) {
+          OBR.notification.show('❌ No items selected')
+          return
+        }
+
+        // Show names of all selected items
+        const itemNames = selectedItems.map(item => item.name || `Item ${item.id.slice(0, 8)}`).join(', ')
+        OBR.notification.show(`📝 Items: ${itemNames}`)
+
+        // Also update the extension output
+        output.innerHTML = `
+          <p>🖱️ Context Menu Used</p>
+          <p>• Items selected: <strong>${selectedItems.length}</strong></p>
+          <p>• Names: <em>${itemNames}</em></p>
+          <p>• Right-click any asset to see this menu!</p>
+        `
+      } catch (error) {
+        console.error('Error in context menu:', error)
+        OBR.notification.show('❌ Error accessing item information')
+      }
+    }
+  })
+
+  console.log('🎯 Context menu registered: Right-click character tokens to see "Show Item Name"')
 })
