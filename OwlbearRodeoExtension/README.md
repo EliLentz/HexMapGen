@@ -138,7 +138,23 @@ The version updates automatically during:
 - 🖱️ **Context Menu**: Right-click any asset to draw indicator squares
 - 📐 **Selection Indicators**: Visual square appears when selecting items
 - 🎨 **HTML Squares**: Pure HTML elements that appear within the extension UI
+- ⬡ **Hex Map Builder**: Interactive tool for creating snapping hexagon grids with live preview
 - 🎨 **Modern UI**: Beautiful gradient design with responsive layout
+
+## Hex Map Builder Usage
+
+The hex map builder provides an interactive tool for creating hexagon-based maps:
+
+1. **Activate Tool**: Click the "⬡ Hex Builder" button in the extension
+2. **Visual Preview**: Move your mouse on the Owlbear scene to see a green ghost hexagon
+3. **Place Hexagons**: Click to place solid blue hexagons that snap to a hexagonal grid
+4. **Deactivate**: Click the button again to exit hex placement mode
+
+**Features**:
+- **Grid Snapping**: Hexagons automatically align to create perfect hexagonal grids
+- **Live Preview**: See where your next hexagon will be placed before clicking
+- **Coordinate System**: Each hexagon is labeled with its grid coordinates (q, r)
+- **Visual Feedback**: Extension shows placement information and coordinates
 
 ## Technical Learning
 
@@ -148,9 +164,13 @@ The version updates automatically during:
 - `OBR.scene.items.addItems()` - Add shapes and visual elements to the scene
 - `OBR.scene.items.deleteItems()` - Remove items from scene
 - `OBR.scene.items.getItemBounds()` - Get item dimensions and position for precise placement
+- `OBR.tool.create()` - Create custom tools in Owlbear's toolbar
+- `OBR.tool.createMode()` - Create custom tool modes with mouse interaction
+- `OBR.tool.activateTool()` - Activate/deactivate tools programmatically
 - `buildShape()` - Create visual shapes programmatically with full styling control
+- **Hex Grid Mathematics** - Convert between pixel and hexagonal coordinates
 - **DOM Manipulation** - Create and manage HTML elements within the extension UI
-- Context menu callbacks with item context access
+- Tool mode event handlers (onToolMove, onToolClick, onActivate, onDeactivate)
 - Shape positioning, layering, and visual properties
 - Multiple indicator management and cleanup
 - CSS animations and transitions for UI elements

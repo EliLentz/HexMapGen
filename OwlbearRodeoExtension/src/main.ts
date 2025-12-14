@@ -1,6 +1,38 @@
 import './style.css'
 import OBR, { buildShape } from '@owlbear-rodeo/sdk'
 
+// Hex grid utilities
+function hexToPixel(q: number, r: number, size: number) {
+  const x = size * (3/2 * q)
+  const y = size * (Math.sqrt(3)/2 * q + Math.sqrt(3) * r)
+  return { x, y }
+}
+
+function pixelToHex(x: number, y: number, size: number) {
+  const q = (2/3 * x) / size
+  const r = (-1/3 * x + Math.sqrt(3)/3 * y) / size
+  return hexRound(q, r)
+}
+
+function hexRound(q: number, r: number) {
+  const s = -q - r
+  let rq = Math.round(q)
+  let rr = Math.round(r)
+  let rs = Math.round(s)
+
+  const qDiff = Math.abs(rq - q)
+  const rDiff = Math.abs(rr - r)
+  const sDiff = Math.abs(rs - s)
+
+  if (qDiff > rDiff && qDiff > sDiff) {
+    rq = -rr - rs
+  } else if (rDiff > sDiff) {
+    rr = -rq - rs
+  }
+
+  return { q: rq, r: rr }
+}
+
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="extension-container">
     <h1>🎲 Hex Map Generator</h1>
@@ -12,6 +44,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <button id="scene-btn" type="button">📊 Scene Info</button>
         <button id="dice-btn" type="button">🎯 Roll Dice</button>
         <button id="html-square-btn" type="button">🎨 HTML Square</button>
+        <button id="hex-tool-btn" type="button">⬡ Hex Builder</button>
       </div>
     </div>
 
@@ -206,6 +239,67 @@ OBR.onReady(() => {
 
   console.log('🎯 Context menu registered: Right-click any asset to draw indicator squares')
 
+  // Hex Map Builder Tool
+  let hexToolActive = false
+  let ghostHexagonId: string | null = null
+  const hexSize = 50 // Size of each hexagon
+
+  // Create the hex builder tool first
+  OBR.tool.create({
+    id: 'hex-builder-tool',
+    icons: [{
+      icon: 'https://elilentz.github.io/HexMapGen/icon.svg',
+      label: 'Hex Builder'
+    }],
+    defaultMode: 'hex-placement-mode'
+  })
+
+  // Setup hex tool button
+  const hexToolBtn = document.querySelector<HTMLButtonElement>('#hex-tool-btn')!
+  hexToolBtn.addEventListener('click', async () => {
+    if (hexToolActive) {
+      // Deactivate tool
+      try {
+        await OBR.tool.activateTool('') // Deactivate by activating empty tool
+      } catch (error) {
+        console.error('Error deactivating tool:', error)
+      }
+      hexToolActive = false
+      hexToolBtn.textContent = '⬡ Hex Builder'
+      hexToolBtn.style.background = ''
+
+      // Remove ghost hexagon
+      if (ghostHexagonId) {
+        OBR.scene.items.deleteItems([ghostHexagonId])
+        ghostHexagonId = null
+      }
+
+      output.innerHTML = `
+        <p>⬡ Hex Builder Deactivated</p>
+        <p>• Tool mode disabled</p>
+        <p>• Click to activate hex placement</p>
+      `
+    } else {
+      // Activate tool
+      try {
+        await OBR.tool.activateTool('hex-builder-tool')
+        hexToolActive = true
+        hexToolBtn.textContent = '🟢 Hex Builder Active'
+        hexToolBtn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)'
+
+        output.innerHTML = `
+          <p>⬡ Hex Builder Activated</p>
+          <p>• Tool mode active</p>
+          <p>• Move mouse to see ghost hexagon</p>
+          <p>• Click to place hexagons</p>
+        `
+      } catch (error) {
+        console.error('Error activating hex tool:', error)
+        OBR.notification.show('❌ Error activating hex tool')
+      }
+    }
+  })
+
   // Track created indicator shapes
   let indicatorShapeId: string | null = null
 
@@ -280,4 +374,120 @@ OBR.onReady(() => {
   })
 
   console.log('📐 Selection indicator system active: Click any item to see the red square indicator')
+
+  // Create Hex Builder Tool Mode
+  OBR.tool.createMode({
+    id: 'hex-placement-mode',
+    icons: [{
+      icon: 'https://elilentz.github.io/HexMapGen/icon.svg',
+      label: 'Hex Placement'
+    }],
+    onActivate: () => {
+      console.log('Hex Builder tool mode activated')
+    },
+    onDeactivate: () => {
+      console.log('Hex Builder tool mode deactivated')
+      // Clean up ghost hexagon when tool is deactivated
+      if (ghostHexagonId) {
+        OBR.scene.items.deleteItems([ghostHexagonId])
+        ghostHexagonId = null
+      }
+    },
+    onToolMove: async (_context, event) => {
+      if (!hexToolActive) return
+
+      try {
+        // Convert mouse position to hex coordinates
+        const hexCoords = pixelToHex(event.pointerPosition.x, event.pointerPosition.y, hexSize)
+        const pixelPos = hexToPixel(hexCoords.q, hexCoords.r, hexSize)
+
+        // Remove existing ghost
+        if (ghostHexagonId) {
+          await OBR.scene.items.deleteItems([ghostHexagonId])
+        }
+
+        // Create ghost hexagon (preview)
+        const ghostHex = buildShape()
+          .shapeType('HEXAGON')
+          .position({ x: pixelPos.x, y: pixelPos.y })
+          .width(hexSize * 2)
+          .height(hexSize * 2)
+          .fillColor('#4CAF50')
+          .fillOpacity(0.3)
+          .strokeColor('#4CAF50')
+          .strokeWidth(2)
+          .strokeOpacity(0.8)
+          .name('Hex Preview')
+          .build()
+
+        await OBR.scene.items.addItems([ghostHex])
+        ghostHexagonId = ghostHex.id
+
+      } catch (error) {
+        console.error('Error in hex tool move:', error)
+      }
+    },
+    onToolClick: async (_context, event) => {
+      if (!hexToolActive) return
+
+      try {
+        // Convert mouse position to hex coordinates and place hexagon
+        const hexCoords = pixelToHex(event.pointerPosition.x, event.pointerPosition.y, hexSize)
+        const pixelPos = hexToPixel(hexCoords.q, hexCoords.r, hexSize)
+
+        // Remove ghost hexagon
+        if (ghostHexagonId) {
+          await OBR.scene.items.deleteItems([ghostHexagonId])
+          ghostHexagonId = null
+        }
+
+        // Create actual hexagon
+        const hexagon = buildShape()
+          .shapeType('HEXAGON')
+          .position({ x: pixelPos.x, y: pixelPos.y })
+          .width(hexSize * 2)
+          .height(hexSize * 2)
+          .fillColor('#2196F3')
+          .fillOpacity(0.8)
+          .strokeColor('#0D47A1')
+          .strokeWidth(3)
+          .strokeOpacity(1)
+          .name(`Hex (${hexCoords.q}, ${hexCoords.r})`)
+          .build()
+
+        await OBR.scene.items.addItems([hexagon])
+
+        // Update extension output
+        output.innerHTML = `
+          <p>⬡ Hexagon Placed</p>
+          <p>• Grid position: (${hexCoords.q}, ${hexCoords.r})</p>
+          <p>• World position: (${Math.round(pixelPos.x)}, ${Math.round(pixelPos.y)})</p>
+          <p>• Move mouse for next placement</p>
+        `
+
+        // Create new ghost at same position
+        const newGhostHex = buildShape()
+          .shapeType('HEXAGON')
+          .position({ x: pixelPos.x, y: pixelPos.y })
+          .width(hexSize * 2)
+          .height(hexSize * 2)
+          .fillColor('#4CAF50')
+          .fillOpacity(0.3)
+          .strokeColor('#4CAF50')
+          .strokeWidth(2)
+          .strokeOpacity(0.8)
+          .name('Hex Preview')
+          .build()
+
+        await OBR.scene.items.addItems([newGhostHex])
+        ghostHexagonId = newGhostHex.id
+
+      } catch (error) {
+        console.error('Error placing hexagon:', error)
+        OBR.notification.show('❌ Error placing hexagon')
+      }
+    }
+  })
+
+  console.log('⬡ Hex Builder tool mode created')
 })
