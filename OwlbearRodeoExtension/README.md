@@ -137,6 +137,7 @@ The version updates automatically during:
 - 🔔 **Notifications**: Send notifications to players
 - 🖱️ **Context Menu**: Right-click any asset to draw indicator squares
 - 📐 **Selection Indicators**: Visual square appears when selecting items
+- 🎨 **HTML Squares**: Pure HTML elements that appear within the extension UI
 - 🎨 **Modern UI**: Beautiful gradient design with responsive layout
 
 ## Technical Learning
@@ -148,9 +149,11 @@ The version updates automatically during:
 - `OBR.scene.items.deleteItems()` - Remove items from scene
 - `OBR.scene.items.getItemBounds()` - Get item dimensions and position for precise placement
 - `buildShape()` - Create visual shapes programmatically with full styling control
+- **DOM Manipulation** - Create and manage HTML elements within the extension UI
 - Context menu callbacks with item context access
 - Shape positioning, layering, and visual properties
 - Multiple indicator management and cleanup
+- CSS animations and transitions for UI elements
 
 ## Next Steps
 

@@ -11,6 +11,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <button id="notify-btn" type="button">🔔 Show Notification</button>
         <button id="scene-btn" type="button">📊 Scene Info</button>
         <button id="dice-btn" type="button">🎯 Roll Dice</button>
+        <button id="html-square-btn" type="button">🎨 HTML Square</button>
       </div>
     </div>
 
@@ -69,6 +70,60 @@ OBR.onReady(() => {
       <p><strong style="font-size: 1.2em; color: ${roll === 20 ? '#27ae60' : roll === 1 ? '#e74c3c' : '#3498db'}">${roll}</strong></p>
       <p>${roll === 20 ? '🌟 Amazing!' : roll === 1 ? '😞 Ouch!' : 'Nice roll!'}</p>
     `
+  })
+
+  // Setup HTML square button
+  const htmlSquareBtn = document.querySelector<HTMLButtonElement>('#html-square-btn')!
+  let htmlSquare: HTMLDivElement | null = null
+
+  htmlSquareBtn.addEventListener('click', () => {
+    const container = document.querySelector('.extension-container')!
+
+    if (htmlSquare) {
+      // Remove existing square
+      container.removeChild(htmlSquare)
+      htmlSquare = null
+      htmlSquareBtn.textContent = '🎨 HTML Square'
+      output.innerHTML = `
+        <p>🎨 HTML Square</p>
+        <p>• Square removed from UI</p>
+        <p>• Click button again to show it</p>
+      `
+    } else {
+      // Create new HTML square
+      htmlSquare = document.createElement('div')
+      htmlSquare.className = 'html-square'
+      htmlSquare.innerHTML = `
+        <div class="square-content">
+          <span class="square-text">HTML</span>
+          <span class="square-text">SQUARE</span>
+        </div>
+      `
+
+      // Position it randomly within the container
+      const containerRect = container.getBoundingClientRect()
+      const squareSize = 80
+      const maxX = containerRect.width - squareSize - 40 // Account for padding
+      const maxY = containerRect.height - squareSize - 40
+
+      const randomX = Math.random() * Math.max(0, maxX)
+      const randomY = Math.random() * Math.max(0, maxY)
+
+      htmlSquare.style.position = 'absolute'
+      htmlSquare.style.left = `${randomX}px`
+      htmlSquare.style.top = `${randomY}px`
+      htmlSquare.style.zIndex = '10'
+
+      container.appendChild(htmlSquare)
+      htmlSquareBtn.textContent = '❌ Remove Square'
+
+      output.innerHTML = `
+        <p>🎨 HTML Square Created</p>
+        <p>• Pure HTML element (not Owlbear item)</p>
+        <p>• Position: (${Math.round(randomX)}, ${Math.round(randomY)})</p>
+        <p>• Click button again to remove it</p>
+      `
+    }
   })
 
   // Track context menu indicator shapes
