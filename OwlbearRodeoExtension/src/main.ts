@@ -1,36 +1,63 @@
 import './style.css'
 import OBR, { buildShape } from '@owlbear-rodeo/sdk'
 
-// Hex grid utilities
-function hexToPixel(q: number, r: number, size: number) {
-  const x = size * (3/2 * q)
-  const y = size * (Math.sqrt(3)/2 * q + Math.sqrt(3) * r)
-  return { x, y }
-}
+// Hex edge-to-edge snapping utilities
+function getHexagonNeighbors(centerX: number, centerY: number, hexSize: number) {
+  // Hexagon has 6 neighbors at 60-degree intervals
+  const neighbors = []
+  const radius = hexSize * Math.sqrt(3) // Distance to neighbor centers
 
-function pixelToHex(x: number, y: number, size: number) {
-  const q = (2/3 * x) / size
-  const r = (-1/3 * x + Math.sqrt(3)/3 * y) / size
-  return hexRound(q, r)
-}
-
-function hexRound(q: number, r: number) {
-  const s = -q - r
-  let rq = Math.round(q)
-  let rr = Math.round(r)
-  let rs = Math.round(s)
-
-  const qDiff = Math.abs(rq - q)
-  const rDiff = Math.abs(rr - r)
-  const sDiff = Math.abs(rs - s)
-
-  if (qDiff > rDiff && qDiff > sDiff) {
-    rq = -rr - rs
-  } else if (rDiff > sDiff) {
-    rr = -rq - rs
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * 60) * (Math.PI / 180)
+    const x = centerX + radius * Math.cos(angle)
+    const y = centerY + radius * Math.sin(angle)
+    neighbors.push({ x, y, direction: i })
   }
 
-  return { q: rq, r: rr }
+  return neighbors
+}
+
+function findNearestSnapPosition(mouseX: number, mouseY: number, existingHexagons: any[], hexSize: number) {
+  if (existingHexagons.length === 0) {
+    // No existing hexagons, place at mouse position
+    return { x: mouseX, y: mouseY, distance: 0 }
+  }
+
+  let nearestPosition = { x: mouseX, y: mouseY, distance: Infinity }
+
+  // Check all possible snap positions around existing hexagons
+  for (const hex of existingHexagons) {
+    if (!hex.position) continue
+
+    const neighbors = getHexagonNeighbors(hex.position.x, hex.position.y, hexSize)
+
+    for (const neighbor of neighbors) {
+      const distance = Math.sqrt(
+        Math.pow(mouseX - neighbor.x, 2) + Math.pow(mouseY - neighbor.y, 2)
+      )
+
+      if (distance < nearestPosition.distance) {
+        nearestPosition = { x: neighbor.x, y: neighbor.y, distance }
+      }
+    }
+  }
+
+  // If mouse is very close to an existing hexagon position, don't snap (avoid overlap)
+  const minDistance = hexSize * 1.5 // Minimum distance to avoid overlap
+  for (const hex of existingHexagons) {
+    if (!hex.position) continue
+
+    const distanceToExisting = Math.sqrt(
+      Math.pow(mouseX - hex.position.x, 2) + Math.pow(mouseY - hex.position.y, 2)
+    )
+
+    if (distanceToExisting < minDistance) {
+      // Too close to existing hexagon, place at mouse position instead
+      return { x: mouseX, y: mouseY, distance: 0 }
+    }
+  }
+
+  return nearestPosition
 }
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -397,19 +424,32 @@ OBR.onReady(() => {
       if (!hexToolActive) return
 
       try {
-        // Convert mouse position to hex coordinates
-        const hexCoords = pixelToHex(event.pointerPosition.x, event.pointerPosition.y, hexSize)
-        const pixelPos = hexToPixel(hexCoords.q, hexCoords.r, hexSize)
+        // Get all existing hexagons for edge-to-edge snapping
+        const allItems = await OBR.scene.items.getItems()
+        const existingHexagons = allItems.filter(item =>
+          item.type === 'SHAPE' &&
+          (item as any).shapeType === 'HEXAGON' &&
+          item.name &&
+          item.name.startsWith('Hex')
+        )
+
+        // Find nearest snap position based on existing hexagons
+        const snapPosition = findNearestSnapPosition(
+          event.pointerPosition.x,
+          event.pointerPosition.y,
+          existingHexagons,
+          hexSize
+        )
 
         // Remove existing ghost
         if (ghostHexagonId) {
           await OBR.scene.items.deleteItems([ghostHexagonId])
         }
 
-        // Create ghost hexagon (preview)
+        // Create ghost hexagon at snap position
         const ghostHex = buildShape()
           .shapeType('HEXAGON')
-          .position({ x: pixelPos.x, y: pixelPos.y })
+          .position({ x: snapPosition.x, y: snapPosition.y })
           .width(hexSize * 2)
           .height(hexSize * 2)
           .fillColor('#4CAF50')
@@ -431,9 +471,22 @@ OBR.onReady(() => {
       if (!hexToolActive) return
 
       try {
-        // Convert mouse position to hex coordinates and place hexagon
-        const hexCoords = pixelToHex(event.pointerPosition.x, event.pointerPosition.y, hexSize)
-        const pixelPos = hexToPixel(hexCoords.q, hexCoords.r, hexSize)
+        // Get all existing hexagons for edge-to-edge snapping
+        const allItems = await OBR.scene.items.getItems()
+        const existingHexagons = allItems.filter(item =>
+          item.type === 'SHAPE' &&
+          (item as any).shapeType === 'HEXAGON' &&
+          item.name &&
+          item.name.startsWith('Hex')
+        )
+
+        // Find nearest snap position
+        const snapPosition = findNearestSnapPosition(
+          event.pointerPosition.x,
+          event.pointerPosition.y,
+          existingHexagons,
+          hexSize
+        )
 
         // Remove ghost hexagon
         if (ghostHexagonId) {
@@ -441,10 +494,10 @@ OBR.onReady(() => {
           ghostHexagonId = null
         }
 
-        // Create actual hexagon
+        // Create actual hexagon at snap position
         const hexagon = buildShape()
           .shapeType('HEXAGON')
-          .position({ x: pixelPos.x, y: pixelPos.y })
+          .position({ x: snapPosition.x, y: snapPosition.y })
           .width(hexSize * 2)
           .height(hexSize * 2)
           .fillColor('#2196F3')
@@ -452,7 +505,7 @@ OBR.onReady(() => {
           .strokeColor('#0D47A1')
           .strokeWidth(3)
           .strokeOpacity(1)
-          .name(`Hex (${hexCoords.q}, ${hexCoords.r})`)
+          .name(`Hex (${Math.round(snapPosition.x)}, ${Math.round(snapPosition.y)})`)
           .build()
 
         await OBR.scene.items.addItems([hexagon])
@@ -460,15 +513,16 @@ OBR.onReady(() => {
         // Update extension output
         output.innerHTML = `
           <p>⬡ Hexagon Placed</p>
-          <p>• Grid position: (${hexCoords.q}, ${hexCoords.r})</p>
-          <p>• World position: (${Math.round(pixelPos.x)}, ${Math.round(pixelPos.y)})</p>
+          <p>• Snapped to nearest edge</p>
+          <p>• Position: (${Math.round(snapPosition.x)}, ${Math.round(snapPosition.y)})</p>
+          <p>• Distance from mouse: ${Math.round(snapPosition.distance)}px</p>
           <p>• Move mouse for next placement</p>
         `
 
-        // Create new ghost at same position
+        // Create new ghost at the placement position (for continuity)
         const newGhostHex = buildShape()
           .shapeType('HEXAGON')
-          .position({ x: pixelPos.x, y: pixelPos.y })
+          .position({ x: snapPosition.x, y: snapPosition.y })
           .width(hexSize * 2)
           .height(hexSize * 2)
           .fillColor('#4CAF50')

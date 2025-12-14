@@ -138,23 +138,24 @@ The version updates automatically during:
 - 🖱️ **Context Menu**: Right-click any asset to draw indicator squares
 - 📐 **Selection Indicators**: Visual square appears when selecting items
 - 🎨 **HTML Squares**: Pure HTML elements that appear within the extension UI
-- ⬡ **Hex Map Builder**: Interactive tool for creating snapping hexagon grids with live preview
+- ⬡ **Hex Map Builder**: Interactive tool for creating edge-to-edge snapping hexagon maps with live preview
 - 🎨 **Modern UI**: Beautiful gradient design with responsive layout
 
 ## Hex Map Builder Usage
 
-The hex map builder provides an interactive tool for creating hexagon-based maps:
+The hex map builder provides an interactive tool for creating edge-to-edge snapping hexagon maps:
 
 1. **Activate Tool**: Click the "⬡ Hex Builder" button in the extension
-2. **Visual Preview**: Move your mouse on the Owlbear scene to see a green ghost hexagon
-3. **Place Hexagons**: Click to place solid blue hexagons that snap to a hexagonal grid
+2. **Visual Preview**: Move your mouse on the Owlbear scene to see a green ghost hexagon that snaps to existing hexagons
+3. **Place Hexagons**: Click to place solid blue hexagons that snap edge-to-edge with existing ones
 4. **Deactivate**: Click the button again to exit hex placement mode
 
 **Features**:
-- **Grid Snapping**: Hexagons automatically align to create perfect hexagonal grids
-- **Live Preview**: See where your next hexagon will be placed before clicking
-- **Coordinate System**: Each hexagon is labeled with its grid coordinates (q, r)
-- **Visual Feedback**: Extension shows placement information and coordinates
+- **Edge-to-Edge Snapping**: Hexagons automatically snap to the nearest edge of existing hexagons
+- **Live Preview**: See exactly where your hexagon will be placed before clicking
+- **Magnetic Placement**: Hexagons attract to each other like puzzle pieces
+- **Organic Maps**: Create irregular hexagonal formations, not just grids
+- **Visual Feedback**: Extension shows placement information and snap distances
 
 ## Technical Learning
 
@@ -168,7 +169,7 @@ The hex map builder provides an interactive tool for creating hexagon-based maps
 - `OBR.tool.createMode()` - Create custom tool modes with mouse interaction
 - `OBR.tool.activateTool()` - Activate/deactivate tools programmatically
 - `buildShape()` - Create visual shapes programmatically with full styling control
-- **Hex Grid Mathematics** - Convert between pixel and hexagonal coordinates
+- **Edge-to-Edge Snapping** - Calculate nearest neighbor positions for magnetic hexagon placement
 - **DOM Manipulation** - Create and manage HTML elements within the extension UI
 - Tool mode event handlers (onToolMove, onToolClick, onActivate, onDeactivate)
 - Shape positioning, layering, and visual properties
