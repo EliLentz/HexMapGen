@@ -1,6 +1,6 @@
 {
   "name": "My First Owlbear Extension",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "description": "A study extension for learning Owlbear Rodeo development",
   "author": "Your Name",
   "manifest_version": 1,
@@ -9,6 +9,6 @@
     "icon": "https://elilentz.github.io/HexMapGen/icon.svg",
     "popover": "https://elilentz.github.io/HexMapGen/index.html",
     "width": 450,
-    "height": 400
+    "height": 800
   }
 }
