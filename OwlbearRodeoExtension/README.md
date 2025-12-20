@@ -146,13 +146,19 @@ The version updates automatically during:
 The hex map builder provides an interactive tool for creating edge-to-edge snapping hexagon maps:
 
 1. **Activate Tool**: Click the "⬡ Hex Builder" button in the extension
-2. **Visual Preview**: Move your mouse on the Owlbear scene to see a green ghost hexagon that snaps to existing hexagons
-3. **Place Hexagons**: Click to place solid blue hexagons that snap edge-to-edge with existing ones
-4. **Deactivate**: Click the button again to exit hex placement mode
+2. **Configure Size** (optional): Select an existing hexagon and click "📏 Set from Selected Hex" to match its size
+3. **Visual Grid Preview**: Move your mouse to see ghost hexagons at ALL valid snap positions
+4. **Place Hexagons**: Click to place solid blue hexagons that snap edge-to-edge
+5. **Undo/Redo**: Use buttons or keyboard shortcuts (Ctrl+Z / Ctrl+Y) to correct mistakes
+6. **Deactivate**: Click the button again to exit hex placement mode
 
 **Features**:
+- **Configurable Hex Size**: Detect size from existing hexagons or use default (50px)
 - **Edge-to-Edge Snapping**: Hexagons automatically snap to the nearest edge of existing hexagons
-- **Live Preview**: See exactly where your hexagon will be placed before clicking
+- **Grid Preview**: See all possible snap positions as ghost hexagons (up to 20 shown)
+- **Nearest Highlight**: The closest snap position is highlighted more prominently
+- **Undo/Redo System**: Track placement history with keyboard shortcuts
+- **Placement Counter**: See how many hexagons you've placed
 - **Magnetic Placement**: Hexagons attract to each other like puzzle pieces
 - **Organic Maps**: Create irregular hexagonal formations, not just grids
 - **Visual Feedback**: Extension shows placement information and snap distances

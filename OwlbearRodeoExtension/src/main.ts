@@ -1,6 +1,29 @@
 import './style.css'
 import OBR, { buildShape } from '@owlbear-rodeo/sdk'
 
+// Hex size detection utility
+function detectHexSize(hexagon: any): number | null {
+  if (!hexagon || hexagon.type !== 'SHAPE' || (hexagon as any).shapeType !== 'HEXAGON') {
+    return null
+  }
+
+  // Hexagon size is typically stored in width/height
+  // For a hexagon, width and height should be equal
+  const width = hexagon.width || 0
+  const height = hexagon.height || 0
+
+  if (width === 0 && height === 0) {
+    return null
+  }
+
+  // Hexagon radius is half the width/height
+  // But we need the "size" parameter used in calculations
+  // For hexagons, size = width / 2
+  const detectedSize = Math.max(width, height) / 2
+
+  return detectedSize > 0 ? detectedSize : null
+}
+
 // Hex edge-to-edge snapping utilities
 function getHexagonNeighbors(centerX: number, centerY: number, hexSize: number) {
   // Hexagon has 6 neighbors at 60-degree intervals
@@ -15,6 +38,44 @@ function getHexagonNeighbors(centerX: number, centerY: number, hexSize: number) 
   }
 
   return neighbors
+}
+
+function getAllValidSnapPositions(existingHexagons: any[], hexSize: number) {
+  const snapPositions: Array<{ x: number; y: number; distance: number }> = []
+  const occupiedPositions = new Set<string>()
+
+  // Mark occupied positions
+  for (const hex of existingHexagons) {
+    if (!hex.position) continue
+    const key = `${Math.round(hex.position.x)},${Math.round(hex.position.y)}`
+    occupiedPositions.add(key)
+  }
+
+  // Get all neighbor positions
+  for (const hex of existingHexagons) {
+    if (!hex.position) continue
+
+    const neighbors = getHexagonNeighbors(hex.position.x, hex.position.y, hexSize)
+
+    for (const neighbor of neighbors) {
+      const key = `${Math.round(neighbor.x)},${Math.round(neighbor.y)}`
+      
+      // Skip if position is already occupied
+      if (occupiedPositions.has(key)) continue
+
+      // Check if this position is already in our list
+      const existing = snapPositions.find(pos => 
+        Math.abs(pos.x - neighbor.x) < 1 && Math.abs(pos.y - neighbor.y) < 1
+      )
+
+      if (!existing) {
+        snapPositions.push({ x: neighbor.x, y: neighbor.y, distance: 0 })
+        occupiedPositions.add(key)
+      }
+    }
+  }
+
+  return snapPositions
 }
 
 function findNearestSnapPosition(mouseX: number, mouseY: number, existingHexagons: any[], hexSize: number) {
@@ -72,6 +133,24 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <button id="dice-btn" type="button">🎯 Roll Dice</button>
         <button id="html-square-btn" type="button">🎨 HTML Square</button>
         <button id="hex-tool-btn" type="button">⬡ Hex Builder</button>
+      </div>
+    </div>
+
+    <div class="hex-builder-section" id="hex-builder-section" style="display: none;">
+      <h2 class="section-title">Hex Map Builder</h2>
+      <div class="hex-controls">
+        <div class="hex-size-control">
+          <label>Hex Size:</label>
+          <span id="hex-size-display">50px</span>
+          <button id="set-size-btn" type="button" class="secondary-btn">📏 Set from Selected Hex</button>
+        </div>
+        <div class="hex-actions">
+          <button id="undo-btn" type="button" class="secondary-btn" disabled>↶ Undo (Ctrl+Z)</button>
+          <button id="redo-btn" type="button" class="secondary-btn" disabled>↷ Redo (Ctrl+Y)</button>
+        </div>
+        <div class="hex-status">
+          <span id="placement-counter">Placed: 0</span>
+        </div>
       </div>
     </div>
 
@@ -266,10 +345,42 @@ OBR.onReady(() => {
 
   console.log('🎯 Context menu registered: Right-click any asset to draw indicator squares')
 
-  // Hex Map Builder Tool
+  // Hex Map Builder Tool - State Management
   let hexToolActive = false
-  let ghostHexagonId: string | null = null
-  const hexSize = 50 // Size of each hexagon
+  let ghostHexagonIds: string[] = [] // Multiple ghosts for grid preview
+  let currentHexSize: number = 50 // Configurable hex size
+  let placementHistory: Array<{ id: string; position: { x: number; y: number }; size: number }> = []
+  let redoHistory: Array<{ id: string; position: { x: number; y: number }; size: number }> = []
+  let placementCount = 0
+
+  // Get UI elements
+  const hexBuilderSection = document.querySelector<HTMLDivElement>('#hex-builder-section')!
+  const hexSizeDisplay = document.querySelector<HTMLSpanElement>('#hex-size-display')!
+  const setSizeBtn = document.querySelector<HTMLButtonElement>('#set-size-btn')!
+  const undoBtn = document.querySelector<HTMLButtonElement>('#undo-btn')!
+  const redoBtn = document.querySelector<HTMLButtonElement>('#redo-btn')!
+  const placementCounter = document.querySelector<HTMLSpanElement>('#placement-counter')!
+
+  // Update hex size display
+  function updateHexSizeDisplay() {
+    hexSizeDisplay.textContent = `${Math.round(currentHexSize)}px`
+  }
+
+  // Update undo/redo button states
+  function updateHistoryButtons() {
+    undoBtn.disabled = placementHistory.length === 0
+    redoBtn.disabled = redoHistory.length === 0
+  }
+
+  // Update placement counter
+  function updatePlacementCounter() {
+    placementCounter.textContent = `Placed: ${placementCount}`
+  }
+
+  // Initialize displays
+  updateHexSizeDisplay()
+  updateHistoryButtons()
+  updatePlacementCounter()
 
   // Create the hex builder tool first
   OBR.tool.create({
@@ -279,6 +390,143 @@ OBR.onReady(() => {
       label: 'Hex Builder'
     }],
     defaultMode: 'hex-placement-mode'
+  })
+
+  // Setup "Set Size from Selected Hex" button
+  setSizeBtn.addEventListener('click', async () => {
+    try {
+      const allItems = await OBR.scene.items.getItems()
+      const selectedItems = allItems.filter(item => 
+        item.visible && item.metadata?.[`${OBR.player.id}/selected`] === true
+      )
+
+      if (selectedItems.length === 0) {
+        OBR.notification.show('❌ Please select a hexagon first')
+        output.innerHTML = `
+          <p>📏 Size Detection</p>
+          <p>• Select a hexagon on the scene</p>
+          <p>• Then click "Set from Selected Hex"</p>
+        `
+        return
+      }
+
+      const selectedHex = selectedItems.find(item => 
+        item.type === 'SHAPE' && (item as any).shapeType === 'HEXAGON'
+      )
+
+      if (!selectedHex) {
+        OBR.notification.show('❌ Selected item is not a hexagon')
+        output.innerHTML = `
+          <p>📏 Size Detection Failed</p>
+          <p>• Please select a hexagon shape</p>
+        `
+        return
+      }
+
+      const detectedSize = detectHexSize(selectedHex)
+      if (detectedSize && detectedSize > 0) {
+        currentHexSize = detectedSize
+        updateHexSizeDisplay()
+        OBR.notification.show(`✅ Hex size set to ${Math.round(detectedSize)}px`)
+        output.innerHTML = `
+          <p>📏 Hex Size Configured</p>
+          <p>• Size: <strong>${Math.round(detectedSize)}px</strong></p>
+          <p>• All new hexagons will use this size</p>
+        `
+      } else {
+        OBR.notification.show('❌ Could not detect hex size')
+      }
+    } catch (error) {
+      console.error('Error detecting hex size:', error)
+      OBR.notification.show('❌ Error detecting hex size')
+    }
+  })
+
+  // Setup Undo button
+  undoBtn.addEventListener('click', async () => {
+    if (placementHistory.length === 0) return
+
+    try {
+      const lastPlacement = placementHistory.pop()!
+      
+      // Remove the hexagon
+      await OBR.scene.items.deleteItems([lastPlacement.id])
+      
+      // Add to redo history
+      redoHistory.push(lastPlacement)
+      
+      placementCount = Math.max(0, placementCount - 1)
+      updateHistoryButtons()
+      updatePlacementCounter()
+
+      OBR.notification.show('↶ Undone')
+      output.innerHTML = `
+        <p>↶ Undo</p>
+        <p>• Removed last hexagon</p>
+        <p>• Use Redo to restore it</p>
+      `
+    } catch (error) {
+      console.error('Error undoing:', error)
+      OBR.notification.show('❌ Error undoing placement')
+    }
+  })
+
+  // Setup Redo button
+  redoBtn.addEventListener('click', async () => {
+    if (redoHistory.length === 0) return
+
+    try {
+      const toRedo = redoHistory.pop()!
+      
+      // Recreate the hexagon
+      const hexagon = buildShape()
+        .shapeType('HEXAGON')
+        .position(toRedo.position)
+        .width(toRedo.size * 2)
+        .height(toRedo.size * 2)
+        .fillColor('#2196F3')
+        .fillOpacity(0.8)
+        .strokeColor('#0D47A1')
+        .strokeWidth(3)
+        .strokeOpacity(1)
+        .name(`Hex (${Math.round(toRedo.position.x)}, ${Math.round(toRedo.position.y)})`)
+        .build()
+
+      await OBR.scene.items.addItems([hexagon])
+      
+      // Add back to placement history
+      placementHistory.push({ id: hexagon.id, position: toRedo.position, size: toRedo.size })
+      
+      placementCount++
+      updateHistoryButtons()
+      updatePlacementCounter()
+
+      OBR.notification.show('↷ Redone')
+      output.innerHTML = `
+        <p>↷ Redo</p>
+        <p>• Restored hexagon</p>
+      `
+    } catch (error) {
+      console.error('Error redoing:', error)
+      OBR.notification.show('❌ Error redoing placement')
+    }
+  })
+
+  // Keyboard shortcuts for undo/redo
+  document.addEventListener('keydown', async (e) => {
+    if ((e.ctrlKey || e.metaKey) && hexToolActive) {
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        if (placementHistory.length > 0) {
+          undoBtn.click()
+        }
+      } else if ((e.key === 'y') || (e.key === 'z' && e.shiftKey)) {
+        e.preventDefault()
+        if (redoHistory.length > 0) {
+          redoBtn.click()
+        }
+      }
+    }
   })
 
   // Setup hex tool button
@@ -294,11 +542,12 @@ OBR.onReady(() => {
       hexToolActive = false
       hexToolBtn.textContent = '⬡ Hex Builder'
       hexToolBtn.style.background = ''
+      hexBuilderSection.style.display = 'none'
 
-      // Remove ghost hexagon
-      if (ghostHexagonId) {
-        OBR.scene.items.deleteItems([ghostHexagonId])
-        ghostHexagonId = null
+      // Remove all ghost hexagons
+      if (ghostHexagonIds.length > 0) {
+        await OBR.scene.items.deleteItems(ghostHexagonIds)
+        ghostHexagonIds = []
       }
 
       output.innerHTML = `
@@ -313,11 +562,12 @@ OBR.onReady(() => {
         hexToolActive = true
         hexToolBtn.textContent = '🟢 Hex Builder Active'
         hexToolBtn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)'
+        hexBuilderSection.style.display = 'block'
 
         output.innerHTML = `
           <p>⬡ Hex Builder Activated</p>
-          <p>• Tool mode active</p>
-          <p>• Move mouse to see ghost hexagon</p>
+          <p>• Current hex size: <strong>${Math.round(currentHexSize)}px</strong></p>
+          <p>• Move mouse to see grid preview</p>
           <p>• Click to place hexagons</p>
         `
       } catch (error) {
@@ -412,12 +662,12 @@ OBR.onReady(() => {
     onActivate: () => {
       console.log('Hex Builder tool mode activated')
     },
-    onDeactivate: () => {
+    onDeactivate: async () => {
       console.log('Hex Builder tool mode deactivated')
-      // Clean up ghost hexagon when tool is deactivated
-      if (ghostHexagonId) {
-        OBR.scene.items.deleteItems([ghostHexagonId])
-        ghostHexagonId = null
+      // Clean up all ghost hexagons when tool is deactivated
+      if (ghostHexagonIds.length > 0) {
+        await OBR.scene.items.deleteItems(ghostHexagonIds)
+        ghostHexagonIds = []
       }
     },
     onToolMove: async (_context, event) => {
@@ -430,38 +680,73 @@ OBR.onReady(() => {
           item.type === 'SHAPE' &&
           (item as any).shapeType === 'HEXAGON' &&
           item.name &&
-          item.name.startsWith('Hex')
+          item.name.startsWith('Hex') &&
+          !item.name.includes('Preview') // Exclude preview ghosts
         )
 
-        // Find nearest snap position based on existing hexagons
+        // Find nearest snap position
         const snapPosition = findNearestSnapPosition(
           event.pointerPosition.x,
           event.pointerPosition.y,
           existingHexagons,
-          hexSize
+          currentHexSize
         )
 
-        // Remove existing ghost
-        if (ghostHexagonId) {
-          await OBR.scene.items.deleteItems([ghostHexagonId])
+        // Get all valid snap positions for grid preview
+        const allSnapPositions = getAllValidSnapPositions(existingHexagons, currentHexSize)
+        
+        // Limit number of ghosts shown for performance (show up to 20)
+        const maxGhosts = 20
+        const positionsToShow = allSnapPositions.slice(0, maxGhosts)
+
+        // Remove existing ghosts
+        if (ghostHexagonIds.length > 0) {
+          await OBR.scene.items.deleteItems(ghostHexagonIds)
+          ghostHexagonIds = []
         }
 
-        // Create ghost hexagon at snap position
-        const ghostHex = buildShape()
-          .shapeType('HEXAGON')
-          .position({ x: snapPosition.x, y: snapPosition.y })
-          .width(hexSize * 2)
-          .height(hexSize * 2)
-          .fillColor('#4CAF50')
-          .fillOpacity(0.3)
-          .strokeColor('#4CAF50')
-          .strokeWidth(2)
-          .strokeOpacity(0.8)
-          .name('Hex Preview')
-          .build()
+        // Create ghost hexagons for grid preview
+        const newGhosts = []
+        for (const pos of positionsToShow) {
+          const isNearest = Math.abs(pos.x - snapPosition.x) < 1 && Math.abs(pos.y - snapPosition.y) < 1
+          
+          const ghostHex = buildShape()
+            .shapeType('HEXAGON')
+            .position({ x: pos.x, y: pos.y })
+            .width(currentHexSize * 2)
+            .height(currentHexSize * 2)
+            .fillColor(isNearest ? '#4CAF50' : '#90EE90')
+            .fillOpacity(isNearest ? 0.5 : 0.2)
+            .strokeColor(isNearest ? '#4CAF50' : '#90EE90')
+            .strokeWidth(isNearest ? 3 : 1)
+            .strokeOpacity(isNearest ? 1 : 0.5)
+            .name('Hex Preview')
+            .build()
 
-        await OBR.scene.items.addItems([ghostHex])
-        ghostHexagonId = ghostHex.id
+          newGhosts.push(ghostHex)
+        }
+
+        // If no existing hexagons, show single ghost at mouse position
+        if (existingHexagons.length === 0) {
+          const singleGhost = buildShape()
+            .shapeType('HEXAGON')
+            .position({ x: event.pointerPosition.x, y: event.pointerPosition.y })
+            .width(currentHexSize * 2)
+            .height(currentHexSize * 2)
+            .fillColor('#4CAF50')
+            .fillOpacity(0.3)
+            .strokeColor('#4CAF50')
+            .strokeWidth(2)
+            .strokeOpacity(0.8)
+            .name('Hex Preview')
+            .build()
+          newGhosts.push(singleGhost)
+        }
+
+        if (newGhosts.length > 0) {
+          await OBR.scene.items.addItems(newGhosts)
+          ghostHexagonIds = newGhosts.map(ghost => ghost.id)
+        }
 
       } catch (error) {
         console.error('Error in hex tool move:', error)
@@ -477,7 +762,8 @@ OBR.onReady(() => {
           item.type === 'SHAPE' &&
           (item as any).shapeType === 'HEXAGON' &&
           item.name &&
-          item.name.startsWith('Hex')
+          item.name.startsWith('Hex') &&
+          !item.name.includes('Preview') // Exclude preview ghosts
         )
 
         // Find nearest snap position
@@ -485,21 +771,21 @@ OBR.onReady(() => {
           event.pointerPosition.x,
           event.pointerPosition.y,
           existingHexagons,
-          hexSize
+          currentHexSize
         )
 
-        // Remove ghost hexagon
-        if (ghostHexagonId) {
-          await OBR.scene.items.deleteItems([ghostHexagonId])
-          ghostHexagonId = null
+        // Remove all ghost hexagons
+        if (ghostHexagonIds.length > 0) {
+          await OBR.scene.items.deleteItems(ghostHexagonIds)
+          ghostHexagonIds = []
         }
 
         // Create actual hexagon at snap position
         const hexagon = buildShape()
           .shapeType('HEXAGON')
           .position({ x: snapPosition.x, y: snapPosition.y })
-          .width(hexSize * 2)
-          .height(hexSize * 2)
+          .width(currentHexSize * 2)
+          .height(currentHexSize * 2)
           .fillColor('#2196F3')
           .fillOpacity(0.8)
           .strokeColor('#0D47A1')
@@ -510,31 +796,29 @@ OBR.onReady(() => {
 
         await OBR.scene.items.addItems([hexagon])
 
+        // Track in placement history
+        placementHistory.push({
+          id: hexagon.id,
+          position: { x: snapPosition.x, y: snapPosition.y },
+          size: currentHexSize
+        })
+
+        // Clear redo history when new placement is made
+        redoHistory = []
+        
+        placementCount++
+        updateHistoryButtons()
+        updatePlacementCounter()
+
         // Update extension output
         output.innerHTML = `
           <p>⬡ Hexagon Placed</p>
           <p>• Snapped to nearest edge</p>
           <p>• Position: (${Math.round(snapPosition.x)}, ${Math.round(snapPosition.y)})</p>
-          <p>• Distance from mouse: ${Math.round(snapPosition.distance)}px</p>
-          <p>• Move mouse for next placement</p>
+          <p>• Size: ${Math.round(currentHexSize)}px</p>
+          <p>• Total placed: ${placementCount}</p>
+          <p>• Use Ctrl+Z to undo</p>
         `
-
-        // Create new ghost at the placement position (for continuity)
-        const newGhostHex = buildShape()
-          .shapeType('HEXAGON')
-          .position({ x: snapPosition.x, y: snapPosition.y })
-          .width(hexSize * 2)
-          .height(hexSize * 2)
-          .fillColor('#4CAF50')
-          .fillOpacity(0.3)
-          .strokeColor('#4CAF50')
-          .strokeWidth(2)
-          .strokeOpacity(0.8)
-          .name('Hex Preview')
-          .build()
-
-        await OBR.scene.items.addItems([newGhostHex])
-        ghostHexagonId = newGhostHex.id
 
       } catch (error) {
         console.error('Error placing hexagon:', error)
